@@ -54,6 +54,10 @@ function scrape(doc, url) {
 		let volumeMatch = bibtex.match(/volume=\{(\d+)\}/);
 		if (volumeMatch) item.volume = volumeMatch[1].trim();
 
+		// issue
+		let issueMatch = bibtex.match(/number=\{(\d+)\}/);
+		if (issueMatch) item.issue = issueMatch[1].trim();
+		
 		// Pages
 		let pagesMatch = bibtex.match(/pages=\{(.+?)\}/);
 		if (pagesMatch) item.pages = pagesMatch[1].trim();
