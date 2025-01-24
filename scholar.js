@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2025-01-14 08:56:44"
+	"lastUpdated": "2025-01-24 02:23:29"
 }
 
 function detectWeb(doc, url) {
@@ -27,14 +27,14 @@ function doWeb(doc, url) {
 function scrape(doc, url) {
 	let item = new Zotero.Item("journalArticle"); // 논문 항목 생성
 
-	// 제목 추출
-	let titleElement = doc.querySelector('meta[name="citation_title"]');
-	if (titleElement) {
-		item.title = titleElement.getAttribute("content").trim();
-	} else {
-		Zotero.debug("Title not found!");
-		throw new Error("No title specified for item");
-	}
+    // 제목 추출
+    let titleElement = doc.querySelector('meta[name="citation_title"]');
+    if (titleElement) {
+        item.title = titleElement.getAttribute("content").trim();
+    } else {
+        Zotero.debug("Title not found, setting default title.");
+        item.title = "Unknown Title";
+    }
 
 	// 저자 추출
 	let authorElements = doc.querySelectorAll('meta[name="citation_author"]');
@@ -62,21 +62,40 @@ function scrape(doc, url) {
 	}
 
 
-
-
 	// 발행 연도 추출
-	let dateElement = doc.querySelector('meta[name="citation_publication_date"]');
-	if (dateElement) {
-		item.date = dateElement.getAttribute("content").trim();
-	}
+    let dateElement = doc.querySelector('meta[name="citation_publication_date"]');
+    if (dateElement) {
+        item.date = dateElement.getAttribute("content").trim();
+    } else {
+        Zotero.debug("Publication date not found, setting default date.");
+        item.date = "Unknown Date";
+    }
 
 	// 권(volume) 추출
 	let volumeElement = doc.querySelector('meta[name="citation_volume"]');
-	if (volumeElement) {
+	if (volumeElement && volumeElement.hasAttribute("content")) {
 		item.volume = volumeElement.getAttribute("content").trim();
+	} else {
+		Zotero.debug("Meta tag for volume not found, checking alternative location...");
+
+		// 대체 위치에서 찾기
+		let alternativeVolumeElement = doc.querySelector('#volumeTitle');
+		if (alternativeVolumeElement) {
+			let volumeText = alternativeVolumeElement.textContent.trim();
+			let volumeMatch = volumeText.match(/(\d+)/); // 숫자만 추출
+			if (volumeMatch) {
+				item.volume = volumeMatch[1];
+				Zotero.debug(`Volume extracted from alternative source: ${item.volume}`);
+			} else {
+				Zotero.debug("Volume not found in alternative source, skipping...");
+			}
+		} else {
+			Zotero.debug("No volume information found anywhere, skipping...");
+		}
 	}
 
-	// 호(issue) 추출 - 존재 여부 확인
+
+	// 호(issue) 추출 
 	let issueElement = doc.querySelector('meta[name="citation_issue"]');
 	if (issueElement && issueElement.getAttribute("content")) {
 		item.issue = issueElement.getAttribute("content").trim();
@@ -95,21 +114,27 @@ function scrape(doc, url) {
 
 	// 키워드 추출
 	let keywordsElement = doc.querySelector('meta[name="citation_keywords"]');
-	if (keywordsElement) {
+	if (keywordsElement && keywordsElement.hasAttribute("content")) {
 		item.tags = keywordsElement.getAttribute("content").split(/[,;]/).map(tag => tag.trim());
+	} else {
+		Zotero.debug("Keywords not found or empty, skipping...");
 	}
 
 	// 요약(abstract) 추출
 	let abstractElement = doc.querySelector('meta[name="citation_abstract"]');
-	if (abstractElement) {
+	if (abstractElement && abstractElement.hasAttribute("content")) {
 		item.abstractNote = abstractElement.getAttribute("content").trim();
+	} else {
+		Zotero.debug("Abstract not found, skipping...");
 	}
 
-	// ISSN 추출
-	let issnElement = doc.querySelector('meta[name="citation_issn"]');
-	if (issnElement) {
-		item.ISSN = issnElement.getAttribute("content").trim();
-	}
+    // ISSN 추출
+    let issnElement = doc.querySelector('meta[name="citation_issn"]');
+    if (issnElement) {
+        item.ISSN = issnElement.getAttribute("content").trim();
+    } else {
+        Zotero.debug("ISSN not found, skipping...");
+    }
 
 	// URL 설정
 	item.url = url;
@@ -117,4 +142,3 @@ function scrape(doc, url) {
 	// 아이템 완료
 	item.complete();
 }
-
