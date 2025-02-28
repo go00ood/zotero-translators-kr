@@ -2,22 +2,26 @@
 	"translatorID": "bd8145f0-331a-4fe9-b088-2129410ff048",
 	"label": "earticle",
 	"creator": "go00od",
-	"target": "^https?://(.*\\.)?earticle\\.net/Article/.+",
+	"target": "^https?://.*earticle.*Article.*",
 	"minVersion": "5.0",
 	"maxVersion": "",
 	"priority": 100,
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2025-01-14 09:15:37"
+	"lastUpdated": "2025-02-28 05:21:32"
 }
 
 function detectWeb(doc, url) {
-	// URL이 www.earticle.net을 포함하고 /Article/이 포함된 경우에만 작동
-	if (url.includes('www.earticle.net') && url.includes('/Article/')) {
-		return "journalArticle"; // 논문으로 처리
-	}
-	return false; // 해당하지 않으면 false 반환
+    Zotero.debug("Checking URL: " + url);
+
+    if (url.match(/earticle.*Article/i)) {
+        Zotero.debug("Matched as journalArticle");
+        return "journalArticle";
+    }
+
+    Zotero.debug("No match found");
+    return false;
 }
 
 function doWeb(doc, url) {
@@ -96,4 +100,3 @@ function scrape(doc, url) {
 	// 아이템 완료
 	item.complete();
 }
-
