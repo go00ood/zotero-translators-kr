@@ -2,23 +2,29 @@
 	"translatorID": "1a1d0bd8-7164-4b71-9509-a8b7c5e061b3",
 	"label": "scholar",
 	"creator": "go00od",
-	"target": "^https?://(.*\\.)?scholar\\.kyobobook\\.co\\.kr/article/detail/.+",
+	"target": "^https?://.*scholar.*kyobobook.*article.*detail.*",
 	"minVersion": "5.0",
 	"maxVersion": "",
 	"priority": 100,
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2025-01-24 02:23:29"
+	"lastUpdated": "2025-02-28 04:58:44"
 }
 
 function detectWeb(doc, url) {
-	// scholar.kyobobook.co.kr 도메인에서 동작
-	if (url.includes('scholar.kyobobook.co.kr') && url.includes('/article/detail/')) {
-		return "journalArticle"; // 논문 처리
-	}
-	return false; // 해당하지 않으면 false 반환
+    Zotero.debug("Checking URL: " + url);
+
+    if (url.match(/scholar.*kyobobook.*article.*detail/)) {
+        Zotero.debug("Matched as journalArticle");
+        return "journalArticle";
+    }
+
+    Zotero.debug("No match found");
+    return false;
 }
+
+
 
 function doWeb(doc, url) {
 	scrape(doc, url); // 데이터를 추출하는 scrape 함수 호출
@@ -27,14 +33,14 @@ function doWeb(doc, url) {
 function scrape(doc, url) {
 	let item = new Zotero.Item("journalArticle"); // 논문 항목 생성
 
-    // 제목 추출
-    let titleElement = doc.querySelector('meta[name="citation_title"]');
-    if (titleElement) {
-        item.title = titleElement.getAttribute("content").trim();
-    } else {
-        Zotero.debug("Title not found, setting default title.");
-        item.title = "Unknown Title";
-    }
+	// 제목 추출
+	let titleElement = doc.querySelector('meta[name="citation_title"]');
+	if (titleElement) {
+		item.title = titleElement.getAttribute("content").trim();
+	} else {
+		Zotero.debug("Title not found, setting default title.");
+		item.title = "Unknown Title";
+	}
 
 	// 저자 추출
 	let authorElements = doc.querySelectorAll('meta[name="citation_author"]');
@@ -63,13 +69,13 @@ function scrape(doc, url) {
 
 
 	// 발행 연도 추출
-    let dateElement = doc.querySelector('meta[name="citation_publication_date"]');
-    if (dateElement) {
-        item.date = dateElement.getAttribute("content").trim();
-    } else {
-        Zotero.debug("Publication date not found, setting default date.");
-        item.date = "Unknown Date";
-    }
+	let dateElement = doc.querySelector('meta[name="citation_publication_date"]');
+	if (dateElement) {
+		item.date = dateElement.getAttribute("content").trim();
+	} else {
+		Zotero.debug("Publication date not found, setting default date.");
+		item.date = "Unknown Date";
+	}
 
 	// 권(volume) 추출
 	let volumeElement = doc.querySelector('meta[name="citation_volume"]');
@@ -128,13 +134,13 @@ function scrape(doc, url) {
 		Zotero.debug("Abstract not found, skipping...");
 	}
 
-    // ISSN 추출
-    let issnElement = doc.querySelector('meta[name="citation_issn"]');
-    if (issnElement) {
-        item.ISSN = issnElement.getAttribute("content").trim();
-    } else {
-        Zotero.debug("ISSN not found, skipping...");
-    }
+	// ISSN 추출
+	let issnElement = doc.querySelector('meta[name="citation_issn"]');
+	if (issnElement) {
+		item.ISSN = issnElement.getAttribute("content").trim();
+	} else {
+		Zotero.debug("ISSN not found, skipping...");
+	}
 
 	// URL 설정
 	item.url = url;
