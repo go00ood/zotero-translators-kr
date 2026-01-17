@@ -149,7 +149,7 @@ function scrapeBook(doc, url) {
 }
 
 // ============================================================
-// 3. 학술지 논문 (Journal Article) - 필드 매핑 수정 (학회명/학술지명)
+// 3. 학술지 논문 (Journal Article) 
 // ============================================================
 function scrapeJournal(doc, url) {
     let item = new Zotero.Item("journalArticle");
@@ -174,14 +174,12 @@ function scrapeJournal(doc, url) {
     if (dateMeta) item.date = dateMeta.content.trim();
     
     // 2. 학회명 (Publisher) -> publicationTitle
-    // 요청: <meta name="DC.Publisher" content="국어사학회"> -> publicationTitle
     let publisherMeta = doc.querySelector('meta[name="DC.Publisher"]');
     if (publisherMeta) {
         item.publicationTitle = publisherMeta.content.trim();
     }
 
     // 3. 학술지명 (Journal Name) -> seriesTitle
-    // 요청: <a class="text mgb7">국어사연구(...)</a> -> seriesTitle (괄호 제거)
     let journalElement = doc.querySelector('a.text.mgb7');
     if (journalElement) {
         let rawJournal = journalElement.textContent.replace(/\s+/g, " ").trim();
@@ -217,7 +215,7 @@ function scrapeJournal(doc, url) {
         }
     }
 
-    // 5. 페이지 (Pages) - 라벨 기반 검색
+    // 5. 페이지 (Pages) 
     let pageLabel = Array.from(doc.querySelectorAll('li > span.strong'))
                          .find(el => el.textContent.trim() === "페이지");
 
@@ -247,4 +245,5 @@ function text(doc, selector, attr) {
 	let el = doc.querySelector(selector);
 	return el ? (attr ? el.getAttribute(attr) : el.textContent.trim()) : null;
 }
+
 
