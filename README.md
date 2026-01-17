@@ -36,7 +36,7 @@ KCI, DBpia, RISS, Scholar, eArticle, KISS와 같은 한국 학술 사이트에�
 
 ## 저장 요소 (Item Type별)  
 
-### **학술지 논문 (Journal Article): DBpia, KCI, KISS, earticle, Scholar**
+### **학술지 논문 (Journal Article): DBpia, KCI, KISS, earticle, Scholar, RISS**
 
 | 요소            | 대상 설명                         |
 |-----------------|-----------------------------------|
@@ -70,7 +70,7 @@ KCI, DBpia, RISS, Scholar, eArticle, KISS와 같은 한국 학술 사이트에�
 
 <br/> 
 
-### **도서 (Book): Yonsei Library**
+### **도서 (Book): Yonsei Library, RISS**
 | 요소                | 대상 설명                          |
 |---------------------|------------------------------------|
 | **Item Type**       | 자료 유형 (Book)                  |
