@@ -2,101 +2,93 @@
 	"translatorID": "bd8145f0-331a-4fe9-b088-2129410ff048",
 	"label": "earticle",
 	"creator": "go00od",
-	"target": "^https?://.*earticle.*Article.*",
+	"target": "^https?://[^/]*earticle[^/]*/.*Article.*",
 	"minVersion": "5.0",
 	"maxVersion": "",
 	"priority": 100,
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2025-02-28 05:21:32"
+	"lastUpdated": "2026-05-14 00:04:00"
 }
 
 function detectWeb(doc, url) {
-    Zotero.debug("Checking URL: " + url);
-
-    if (url.match(/earticle.*Article/i)) {
-        Zotero.debug("Matched as journalArticle");
-        return "journalArticle";
-    }
-
-    Zotero.debug("No match found");
-    return false;
+	let hostname = new URL(url).hostname;
+	if (hostname.includes('earticle') && url.match(/Article/i)) {
+		return "journalArticle";
+	}
+	return false;
 }
 
 function doWeb(doc, url) {
-	scrape(doc, url); // 데이터를 추출하는 scrape 함수 호출
+	scrape(doc, url);
 }
 
 function scrape(doc, url) {
-	let item = new Zotero.Item("journalArticle"); // 논문 항목 생성
+	let item = new Zotero.Item("journalArticle");
 
-	// 제목 추출
-	let titleElement = doc.querySelector('meta[name="citation_title"]');
-	if (titleElement) {
-		item.title = titleElement.getAttribute("content").trim();
+	// 메타 태그 추출 헬퍼 함수 (content.js 로직 반영: name과 property 모두 검색)
+	function getMeta(name) {
+		let meta = doc.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
+		return meta ? meta.getAttribute("content").trim() : "";
 	}
 
-	// 저자 추출
+	// 1. 제목
+	item.title = getMeta("citation_title");
+
+	// 2. 저자
 	let authors = doc.querySelectorAll('meta[name="citation_author"]');
 	for (let author of authors) {
-		item.creators.push(ZU.cleanAuthor(author.getAttribute("content").trim(), "author"));
+		let authorName = author.getAttribute("content").trim();
+		item.creators.push(ZU.cleanAuthor(authorName, "author"));
 	}
 
-	// 저널 이름 추출(seriesTitle)
-	let journal = doc.querySelector('meta[name="citation_journal_title"]');
-	if (journal) {
-		item.seriesTitle = journal.getAttribute("content").trim();
-	}
+	// 3. 학술지명 (Journal Title) -> seriesTitle에 입력
+	item.seriesTitle = getMeta("citation_journal_title");
 
-	// 학회 이름 추출
-	let publicationElement = doc.querySelector('a[href^="/Publisher/Detail/"]');
-	if (publicationElement) {
-		item.publicationTitle = publicationElement.getAttribute("title").trim();
+	// 4. 학회명 (Publisher/Society) -> publicationTitle에 입력
+	// content.js의 방식인 a 태그 내부의 span 텍스트를 우선 추출합니다.
+	let pubSpan = doc.querySelector('a[href^="/Publisher/Detail/"] span');
+	if (pubSpan) {
+		item.publicationTitle = pubSpan.textContent.trim();
 	} else {
-		Zotero.debug("Journal name not found!");
+		// Fallback: span이 없을 경우 a 태그의 title 속성이나 텍스트를 확인합니다.
+		let pubAnchor = doc.querySelector('a[href^="/Publisher/Detail/"]');
+		if (pubAnchor) {
+			item.publicationTitle = pubAnchor.getAttribute("title")?.trim() || pubAnchor.textContent.trim();
+		}
 	}
 
-	// 발행 연도 추출
-	let date = doc.querySelector('meta[name="citation_publication_date"]');
-	if (date) {
-		item.date = date.getAttribute("content").trim();
+	// 5. 발행 연도 및 기타 정보
+	item.date = getMeta("citation_publication_date");
+	item.volume = getMeta("citation_volume");
+	item.issue = getMeta("citation_issue");
+
+	// 6. 페이지 범위
+	let fPage = getMeta("citation_firstpage");
+	let lPage = getMeta("citation_lastpage");
+	if (fPage && lPage) {
+		item.pages = `${fPage}-${lPage}`;
+	} else if (fPage) {
+		item.pages = fPage;
 	}
 
-	// 권(volume) 추출
-	let volume = doc.querySelector('meta[name="citation_volume"]');
-	if (volume) {
-		item.volume = volume.getAttribute("content").trim();
-	}
-
-	// 페이지 범위 추출
-	let pagesStart = doc.querySelector('meta[name="citation_firstpage"]');
-	let pagesEnd = doc.querySelector('meta[name="citation_lastpage"]');
-	if (pagesStart && pagesEnd) {
-		item.pages = `${pagesStart.getAttribute("content").trim()}-${pagesEnd.getAttribute("content").trim()}`;
-	}
-
-	// 키워드 추출
-	let keywords = doc.querySelector('meta[name="citation_keywords"]');
+	// 7. 키워드, 초록, ISSN/DOI
+	let keywords = getMeta("citation_keywords");
 	if (keywords) {
-		item.tags = keywords.getAttribute("content").split(/[,;]/).map(tag => tag.trim());
+		item.tags = keywords.split(/[,;]/).map(tag => tag.trim());
 	}
+	item.abstractNote = getMeta("citation_abstract");
+	item.ISSN = getMeta("citation_issn");
+	item.DOI = getMeta("citation_doi");
 
-	// 요약(abstract) 추출
-	let abstract = doc.querySelector('meta[name="citation_abstract"]');
-	if (abstract) {
-		item.abstractNote = abstract.getAttribute("content").trim();
-	}
-
-	// ISSN 추출
-	let issn = doc.querySelector('meta[name="citation_issn"]');
-	if (issn) {
-		item.ISSN = issn.getAttribute("content").trim();
-	}
-
-	// URL 설정
+	// 8. URL 및 설정
 	item.url = url;
+	item.libraryCatalog = "eArticle";
 
-	// 아이템 완료
 	item.complete();
 }
+
+/** BEGIN TEST CASES **/
+var testCases = []
+/** END TEST CASES **/
