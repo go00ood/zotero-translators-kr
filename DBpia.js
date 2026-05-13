@@ -9,7 +9,7 @@
 	"inRepository": true,
 	"translatorType": 4,
 	"browserSupport": "gcsibv",
-	"lastUpdated": "2025-02-28 06:04:31"
+	"lastUpdated": "2026-05-14 00:00:02"
 }
 
 function detectWeb(doc, url) {
@@ -53,33 +53,51 @@ function doWeb(doc, url) {
 	}
 }
 
+/**
+ * DBpia 상세 페이지에서 메타데이터를 추출하고 보정합니다.
+ */
 function scrape(doc, url) {
 	var translator = Zotero.loadTranslator('web');
+	// Embedded Metadata 번역기 사용 (citation_ 태그 기반)
 	translator.setTranslator('951c027d-74ac-47d4-a107-9c3069ab7b48');
+
 	translator.setHandler('itemDone', function (obj, item) {
-		let nodeId = null;
+		// 1. URL 보정 로직 (기존 유지)
 		let nodeIdMatch = url.match(/[?&]nodeId=([^&#]+)/);
 		if (nodeIdMatch) {
-			nodeId = nodeIdMatch[1];
-
+			let nodeId = nodeIdMatch[1];
 			let proxyPattern = /\.access\.[a-z]+\.[a-z]+/;
-			if (proxyPattern.test(url)) {
-				item.url = url; // 프록시 주소 유지
-			} else {
+			if (!proxyPattern.test(url)) {
 				item.url = `https://www.dbpia.co.kr/journal/articleDetail?nodeId=${nodeId}`;
+			} else {
+				item.url = url; 
 			}
-		} else {
-			item.url = url;
 		}
 
-		let seriesTitle = text(doc, '.journalList__link[href*="publicationDetail"]');
+		// 메타 태그 추출 도우미 함수 (content.js 로직 반영)
+		function getMetaContent(name) {
+			return doc.querySelector(`meta[name="${name}"], meta[property="${name}"]`)?.content?.trim() || "";
+		}
+
+		// 2. 학술지명 (seriesTitle) 보정
+		// 메타 태그(citation_journal_title)를 우선하고, 없으면 CSS 셀렉터로 찾습니다.
+		let seriesTitle = getMetaContent("citation_journal_title") || 
+						  doc.querySelector('.journalList__link[href*="publicationDetail"]')?.textContent?.trim();
 		if (seriesTitle) {
-			item.seriesTitle = seriesTitle.trim();
+			item.seriesTitle = seriesTitle;
 		}
 
-		let publicationTitle = text(doc, '.journalList__link[href*="iprdDetail"]');
+		// 3. 발행기관/학회명 (publicationTitle) 보정
+		// 메타 태그(publisher)를 우선하고, 없으면 CSS 셀렉터로 찾습니다.
+		let publicationTitle = getMetaContent("publisher") || 
+							   doc.querySelector('.journalList__link[href*="iprdDetail"]')?.textContent?.trim();
 		if (publicationTitle) {
-			item.publicationTitle = publicationTitle.trim();
+			item.publicationTitle = publicationTitle;
+		}
+
+		// 4. 발행 연도 보정 (필요 시)
+		if (!item.date) {
+			item.date = getMetaContent("citation_publication_date")?.substring(0, 4);
 		}
 
 		item.complete();
@@ -91,3 +109,7 @@ function scrape(doc, url) {
 	});
 }
 
+/** BEGIN TEST CASES **/
+var testCases = [
+]
+/** END TEST CASES **/
